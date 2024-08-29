@@ -10,4 +10,4 @@ The program begins by initializing the I2C communication and configuring both th
 
 Limitations
 
-Please note that this is a test program and is not intended for use in actual devices. The magnetometer readings have been found to have an absolute angle error of approximately 30%, which limits the accuracy of the heading and orientation calculations. Due to this significant error, the program should not be relied upon for precise orientation detection in practical applications.
+Please note that this is a test program. The magnetometer readings have been found to have an absolute angle error of approximately 30%, which limits the accuracy of the heading and orientation calculations. Due to this significant error, the program is not used for precise orientation detection in practical applications.
