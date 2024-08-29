@@ -18,8 +18,8 @@
             #address-cells = <1>;
             #size-cells = <0>;
 
-            ltr329_0: ltr329@29 {
-                compatible = "ltr,ltr329";
+            ltr303_0: ltr303@29 {
+                compatible = "ltr,ltr303";
                 reg = <0x29>;
                 status = "okay";
             };
@@ -32,8 +32,8 @@
             #address-cells = <1>;
             #size-cells = <0>;
 
-            ltr329_1: ltr329@29 {
-                compatible = "ltr,ltr329";
+            ltr303_1: ltr303@29 {
+                compatible = "ltr,ltr303";
                 reg = <0x29>;
                 status = "okay";
             };
@@ -46,8 +46,8 @@
             #address-cells = <1>;
             #size-cells = <0>;
 
-            ltr329_6: ltr329@29 {
-                compatible = "ltr,ltr329";
+            ltr303_6: ltr303@29 {
+                compatible = "ltr,ltr303";
                 reg = <0x29>;
                 status = "okay";
             };
@@ -60,8 +60,8 @@
             #address-cells = <1>;
             #size-cells = <0>;
 
-            ltr329_7: ltr329@29 {
-                compatible = "ltr,ltr329";
+            ltr303_7: ltr303@29 {
+                compatible = "ltr,ltr303";
                 reg = <0x29>;
                 status = "okay";
             };
@@ -74,8 +74,8 @@
             #address-cells = <1>;
             #size-cells = <0>;
 
-            ltr329_2: ltr329@29 {
-                compatible = "ltr,ltr329";
+            ltr303_2: ltr303@29 {
+                compatible = "ltr,ltr303";
                 reg = <0x29>;
                 status = "okay";
             };

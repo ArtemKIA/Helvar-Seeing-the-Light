@@ -8,14 +8,14 @@
 
 #define PCA9548A_ADDR 0x70
 
-// LTR329 specific definitions
-#define LTR329_I2C_ADDRESS 0x29
-#define LTR329_ALS_CONTR 0x80
-#define LTR329_ALS_MEAS_RATE 0x85
-#define LTR329_ALS_DATA_CH1_0 0x88
-#define LTR329_ALS_DATA_CH1_1 0x89
-#define LTR329_ALS_DATA_CH0_0 0x8A
-#define LTR329_ALS_DATA_CH0_1 0x8B
+// LTR303 specific definitions
+#define LTR303_I2C_ADDRESS 0x29
+#define LTR303_ALS_CONTR 0x80
+#define LTR303_ALS_MEAS_RATE 0x85
+#define LTR303_ALS_DATA_CH1_0 0x88
+#define LTR303_ALS_DATA_CH1_1 0x89
+#define LTR303_ALS_DATA_CH0_0 0x8A
+#define LTR303_ALS_DATA_CH0_1 0x8B
 
 // lis3mdl specific definitions
 
@@ -48,7 +48,7 @@
 #endif
 
 #define ALS_GAIN 1
-#define ALS_INT 1 // Assuming 300ms integration time for LTR329
+#define ALS_INT 1 // Assuming 300ms integration time for LTR303
 #define I2C_NODE DT_NODELABEL(i2c1)
 #define I2C_NODE_C DT_NODELABEL(i2c0)
 
@@ -153,7 +153,7 @@ static int calculate_heading(float x, float y) {
 }
 
 
-float calculate_lux_ltr329(uint16_t ch0, uint16_t ch1) {
+float calculate_lux_ltr303(uint16_t ch0, uint16_t ch1) {
     float ratio = (float)ch1 / (ch0 + ch1);
     float als_lux = 0;
 
@@ -171,9 +171,9 @@ float calculate_lux_ltr329(uint16_t ch0, uint16_t ch1) {
 
 
 
-void configure_ltr329_sensor(uint8_t channel) {
-    uint8_t config_contr[2] = {LTR329_ALS_CONTR, 0x01}; // Set gain to x1
-    uint8_t config_meas_rate[2] = {LTR329_ALS_MEAS_RATE, 0x01}; // Set integration time to 300ms
+void configure_ltr303_sensor(uint8_t channel) {
+    uint8_t config_contr[2] = {LTR303_ALS_CONTR, 0x01}; // Set gain to x1
+    uint8_t config_meas_rate[2] = {LTR303_ALS_MEAS_RATE, 0x01}; // Set integration time to 300ms
     int ret;
 
     ret = i2c_reg_write_byte(i2c_dev, PCA9548A_ADDR, 0x04, 1 << channel);
@@ -182,14 +182,14 @@ void configure_ltr329_sensor(uint8_t channel) {
         return;
     }
 
-    ret = i2c_write(i2c_dev, config_contr, sizeof(config_contr), LTR329_I2C_ADDRESS);
+    ret = i2c_write(i2c_dev, config_contr, sizeof(config_contr), LTR303_I2C_ADDRESS);
     if (ret != 0) {
         printk("Failed to write ALS_CONTR to I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
     }
     printk("Configured ALS_CONTR for channel %d\n", channel);
 
-    ret = i2c_write(i2c_dev, config_meas_rate, sizeof(config_meas_rate), LTR329_I2C_ADDRESS);
+    ret = i2c_write(i2c_dev, config_meas_rate, sizeof(config_meas_rate), LTR303_I2C_ADDRESS);
     if (ret != 0) {
         printk("Failed to write ALS_MEAS_RATE to I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
@@ -199,7 +199,7 @@ void configure_ltr329_sensor(uint8_t channel) {
 
 
 
-void read_ltr329_sensor_data(uint8_t channel, uint16_t *ch0, uint16_t *ch1) {
+void read_ltr303_sensor_data(uint8_t channel, uint16_t *ch0, uint16_t *ch1) {
     uint8_t ch1_data_reading[2] = {0};
     uint8_t ch0_data_reading[2] = {0};
     int ret;
@@ -210,25 +210,25 @@ void read_ltr329_sensor_data(uint8_t channel, uint16_t *ch0, uint16_t *ch1) {
         return;
     }
 
-    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH1_0, &ch1_data_reading[0]);
+    ret = i2c_reg_read_byte(i2c_dev, LTR303_I2C_ADDRESS, LTR303_ALS_DATA_CH1_0, &ch1_data_reading[0]);
     if (ret != 0) {
         printk("Failed to read CH1_0 from I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
     }
 
-    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH1_1, &ch1_data_reading[1]);
+    ret = i2c_reg_read_byte(i2c_dev, LTR303_I2C_ADDRESS, LTR303_ALS_DATA_CH1_1, &ch1_data_reading[1]);
     if (ret != 0) {
         printk("Failed to read CH1_1 from I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
     }
 
-    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH0_0, &ch0_data_reading[0]);
+    ret = i2c_reg_read_byte(i2c_dev, LTR303_I2C_ADDRESS, LTR303_ALS_DATA_CH0_0, &ch0_data_reading[0]);
     if (ret != 0) {
         printk("Failed to read CH0_0 from I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
     }
 
-    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH0_1, &ch0_data_reading[1]);
+    ret = i2c_reg_read_byte(i2c_dev, LTR303_I2C_ADDRESS, LTR303_ALS_DATA_CH0_1, &ch0_data_reading[1]);
     if (ret != 0) {
         printk("Failed to read CH0_1 from I2C device on channel %d. Error code: %d\n", channel, ret);
         return;
@@ -247,7 +247,7 @@ void calculate_angles(float lux0, float lux1, float lux6, float lux7, float lux8
     float v1_z = lux8;
     float v2_x = lux6;
     float v2_y = lux7;
-    float v2_z = 0; // Assume LTR329 sensors are in a plane
+    float v2_z = 0; // Assume LTR303 sensors are in a plane
 
     // Calculate vector differences
     float diff_x = v1_x - v2_x;
@@ -328,12 +328,12 @@ void main(void) {
 
 
 
-    // Configure LTR329 sensors (connected to channels 0, 1, 6, 7)
-    configure_ltr329_sensor(0);
-    configure_ltr329_sensor(1);
-    configure_ltr329_sensor(6);
-    configure_ltr329_sensor(7);
-    configure_ltr329_sensor(2);
+    // Configure LTR303 sensors (connected to channels 0, 1, 6, 7)
+    configure_ltr303_sensor(0);
+    configure_ltr303_sensor(1);
+    configure_ltr303_sensor(6);
+    configure_ltr303_sensor(7);
+    configure_ltr303_sensor(2);
     k_sleep(K_MSEC(100)); // Give time for the sensor to stabilize
 
 
@@ -362,21 +362,21 @@ void main(void) {
 
 
 
-        // Read and calculate lux for LTR329 sensors
-        read_ltr329_sensor_data(0, &ch0_0, &ch1_0);
-        als_lux0 = calculate_lux_ltr329(ch0_0, ch1_0);
+        // Read and calculate lux for LTR303 sensors
+        read_ltr303_sensor_data(0, &ch0_0, &ch1_0);
+        als_lux0 = calculate_lux_ltr303(ch0_0, ch1_0);
 
-        read_ltr329_sensor_data(1, &ch0_1, &ch1_1);
-        als_lux1 = calculate_lux_ltr329(ch0_1, ch1_1);
+        read_ltr303_sensor_data(1, &ch0_1, &ch1_1);
+        als_lux1 = calculate_lux_ltr303(ch0_1, ch1_1);
 
-        read_ltr329_sensor_data(6, &ch0_0, &ch1_0);
-        als_lux6 = calculate_lux_ltr329(ch0_0, ch1_0);
+        read_ltr303_sensor_data(6, &ch0_0, &ch1_0);
+        als_lux6 = calculate_lux_ltr303(ch0_0, ch1_0);
 
-        read_ltr329_sensor_data(7, &ch0_1, &ch1_1);
-        als_lux7 = calculate_lux_ltr329(ch0_1, ch1_1);
+        read_ltr303_sensor_data(7, &ch0_1, &ch1_1);
+        als_lux7 = calculate_lux_ltr303(ch0_1, ch1_1);
 
-        read_ltr329_sensor_data(2, &ch0_0, &ch1_0);
-        als_lux8 = calculate_lux_ltr329(ch0_0, ch1_0);
+        read_ltr303_sensor_data(2, &ch0_0, &ch1_0);
+        als_lux8 = calculate_lux_ltr303(ch0_0, ch1_0);
 
         // Calculate angles based on lux values from all sensors
         calculate_angles(als_lux0, als_lux1, als_lux6, als_lux7, als_lux8, &azimuth, &polar);
