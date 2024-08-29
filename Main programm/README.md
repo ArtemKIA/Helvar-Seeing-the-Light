@@ -1,10 +1,8 @@
-# Helvar-Seeing-the-Light
- 
-Project Overview
-This project, undertaken for Aalto University in collaboration with Helvar, focuses on the development of a smart IoT-based sensor system designed to monitor lighting conditions within a room. The device utilizes Bluetooth Low Energy (BLE) to transmit sensor data, which is then analyzed to optimize lighting environments. By distinguishing between natural and artificial light sources and calculating the most dominant light source in 3D space, the system aims to enhance energy efficiency and improve lighting control systems.
+Bluetooth-Based Light Sensor System
+This program is designed to interact with various sensors using Zephyr RTOS, providing real-time data on light intensity, color temperature, and orientation. It uses Bluetooth Low Energy (BLE) to transmit the collected data. The primary sensors include LTR303 ambient light sensors and a TCS34725 RGB sensor, enabling the system to detect and differentiate between natural and artificial light sources.
 
-Features
-The system leverages advanced capabilities such as BLE advertising encryption to securely transmit data, ensuring privacy and data integrity. Key functionalities include the ability to measure illuminance levels, identify the light source, and determine the direction from which the light originates. This information allows for accurate adjustments to lighting systems, supporting features like daylight harvesting and constant light control, which are crucial for energy-saving and user comfort.
+How the Program Works
+The program begins by initializing the Bluetooth module and configuring the I2C communication for sensor interactions. It sets up the LTR303 light sensors and TCS34725 RGB sensor, which are used to measure light intensity and color. Data from these sensors is collected and processed to calculate the illuminance (lux), color temperature (CCT), and the direction of the dominant light source. The azimuth and polar angles are computed to understand the spatial orientation of the light, aiding in determining whether the light source is natural or artificial.
 
-Implementation Details
-Built using Zephyr RTOS, the device integrates various light sensors to gather comprehensive environmental data. Data from the sensors is processed to calculate color temperature and illuminance, and the results are used to classify light sources as natural or artificial. The project also includes a cloud-based tool for reporting and visualization, facilitating real-time monitoring and decision-making. Battery operation and the potential for energy harvesting ensure the device's long-term viability and minimal maintenance.
+Data Transmission and Encryption
+Collected data is prepared for transmission over Bluetooth using BLE advertising. The data includes sensor ID, azimuth, polar angle, average lux, and light source type. For enhanced security, the program includes an option to encrypt this data using AES-128 encryption with a Counter with CBC-MAC (CCM) mode. Although the encryption feature is currently set to false, it can be enabled to secure the data transmitted over BLE. The program continuously updates the advertisement data with new readings, providing a real-time view of the environment's lighting conditions.
