@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "kernel.h": "c",
+        "printk.h": "c",
+        "ccm_mode.h": "c"
+    }
+}

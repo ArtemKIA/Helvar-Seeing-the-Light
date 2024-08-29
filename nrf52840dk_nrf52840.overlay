@@ -1,0 +1,104 @@
+&i2c1 {
+    status = "okay";
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-1 = <&i2c1_sleep>;
+    pinctrl-names = "default", "sleep";
+ 
+ 
+    mux: pca9548@70 {
+        compatible = "nxp,pca9548";
+        reg = <0x70>;
+        status = "okay";
+        #address-cells = <1>;
+        #size-cells = <0>;
+ 
+ 
+        ch0: i2c@0 {
+            reg = <0>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+ 
+ 
+            ltr329_0: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+ 
+ 
+        ch1: i2c@1 {
+            reg = <1>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+ 
+ 
+            ltr329_1: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+ 
+ 
+        ch6: i2c@6 {
+            reg = <6>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+ 
+ 
+            ltr329_6: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+ 
+ 
+        ch7: i2c@7 {
+            reg = <7>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+ 
+ 
+            ltr329_7: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+ 
+ 
+        ch2: i2c@2 {
+            reg = <2>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+ 
+ 
+            ltr329_2: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+    };
+ 
+ 
+    clock-frequency = <I2C_BITRATE_FAST>;
+ };
+ 
+ 
+ &i2c0 {
+    tcs347225: tcs347225@29 {
+        compatibility = "ams,tcs34725";
+        label = "tcs347225";
+        reg = <0x29>;
+    };
+   
+ };
+ 
