@@ -1,0 +1,401 @@
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/device.h>
+#include <zephyr/sys/printk.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#define PCA9548A_ADDR 0x70
+
+// LTR329 specific definitions
+#define LTR329_I2C_ADDRESS 0x29
+#define LTR329_ALS_CONTR 0x80
+#define LTR329_ALS_MEAS_RATE 0x85
+#define LTR329_ALS_DATA_CH1_0 0x88
+#define LTR329_ALS_DATA_CH1_1 0x89
+#define LTR329_ALS_DATA_CH0_0 0x8A
+#define LTR329_ALS_DATA_CH0_1 0x8B
+
+// lis3mdl specific definitions
+
+#define LIS3MDL_I2C_ADDR 0x1c
+
+// Register addresses from the LIS3MDL datasheet
+#define LIS3MDL_WHO_AM_I_REG 0x0F
+#define LIS3MDL_CTRL_REG1 0x20
+#define LIS3MDL_CTRL_REG2 0x21
+#define LIS3MDL_CTRL_REG3 0x22
+#define LIS3MDL_CTRL_REG4 0x23
+#define LIS3MDL_CTRL_REG5 0x24
+#define LIS3MDL_OUTX_L 0x28
+#define LIS3MDL_OUTX_H 0x29
+#define LIS3MDL_OUTY_L 0x2A
+#define LIS3MDL_OUTY_H 0x2B
+#define LIS3MDL_OUTZ_L 0x2C
+#define LIS3MDL_OUTZ_H 0x2D
+#define LIS3MDL_TEMP_OUT_L 0x2E
+#define LIS3MDL_TEMP_OUT_H 0x2F
+#define LIS3MDL_INT_CFG 0x30
+#define LIS3MDL_INT_SRC 0x31
+#define LIS3MDL_INT_THS_L 0x32
+#define LIS3MDL_INT_THS_H 0x33
+
+
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#define ALS_GAIN 1
+#define ALS_INT 1 // Assuming 300ms integration time for LTR329
+#define I2C_NODE DT_NODELABEL(i2c1)
+#define I2C_NODE_C DT_NODELABEL(i2c0)
+
+static const struct device *i2c_dev;
+static const struct device_2 *i2c_dev_2;
+
+static int lis3mdl_read(uint8_t reg_addr, uint8_t *data, size_t length) {
+    int ret = i2c_burst_read(i2c_dev_2, LIS3MDL_I2C_ADDR, reg_addr, data, length);
+    if (ret < 0) {
+        printk("Failed to read from I2C device at address 0x%x, reg 0x%x, error: %d\n", LIS3MDL_I2C_ADDR, reg_addr, ret);
+    }
+    return ret;
+}
+
+static int lis3mdl_write(uint8_t reg_addr, uint8_t *data, size_t length) {
+    int ret = i2c_burst_write(i2c_dev_2, LIS3MDL_I2C_ADDR, reg_addr, data, length);
+    if (ret < 0) {
+        printk("Failed to write to I2C device at address 0x%x, reg 0x%x, error: %d\n", LIS3MDL_I2C_ADDR, reg_addr, ret);
+    }
+    return ret;
+}
+
+static int lis3mdl_init(void) {
+    uint8_t data;
+
+    // Check device ID
+    if (lis3mdl_read(LIS3MDL_WHO_AM_I_REG, &data, 1) < 0) {
+        printk("Error reading WHO_AM_I register\n");
+        return -EIO;
+    }
+    printk("WHO_AM_I register value: 0x%x\n", data);
+
+    if (data != 0x3D) {
+        printk("LIS3MDL not found or wrong device ID (0x%x)\n", data);
+        return -ENODEV;
+    }
+
+    // Configure control registers
+    // CTRL_REG1: Temp sensor enabled, high performance XY, 80Hz ODR
+    data = 0x70;
+    if (lis3mdl_write(LIS3MDL_CTRL_REG1, &data, 1) < 0) {
+        printk("Failed to configure CTRL_REG1\n");
+        return -EIO;
+    }
+
+    // CTRL_REG2: Full scale ±4 gauss
+    data = 0x00;
+    if (lis3mdl_write(LIS3MDL_CTRL_REG2, &data, 1) < 0) {
+        printk("Failed to configure CTRL_REG2\n");
+        return -EIO;
+    }
+
+    // CTRL_REG3: Continuous conversion mode
+    data = 0x00;
+    if (lis3mdl_write(LIS3MDL_CTRL_REG3, &data, 1) < 0) {
+        printk("Failed to configure CTRL_REG3\n");
+        return -EIO;
+    }
+
+    // CTRL_REG4: High performance mode Z
+    data = 0x0C;
+    if (lis3mdl_write(LIS3MDL_CTRL_REG4, &data, 1) < 0) {
+        printk("Failed to configure CTRL_REG4\n");
+        return -EIO;
+    }
+
+    // CTRL_REG5: Block data update
+    data = 0x40;
+    if (lis3mdl_write(LIS3MDL_CTRL_REG5, &data, 1) < 0) {
+        printk("Failed to configure CTRL_REG5\n");
+        return -EIO;
+    }
+
+    return 0;
+}
+
+// Function to normalize the magnetometer data
+static void normalize(float *x, float *y, float *z, const int32_t *m_min, const int32_t *m_max) {
+    // Subtract offset (average of min and max) from magnetometer readings
+    *x -= ((float)m_min[0] + m_max[0]) / 2;
+    *y -= ((float)m_min[1] + m_max[1]) / 2;
+    *z -= ((float)m_min[2] + m_max[2]) / 2;
+
+    // Calculate magnitude of the vector
+    float magnitude = sqrt((*x) * (*x) + (*y) * (*y) + (*z) * (*z));
+    
+    // Normalize the vector
+    if (magnitude != 0) {
+        *x /= magnitude;
+        *y /= magnitude;
+        *z /= magnitude;
+    }
+}
+
+// Function to calculate the heading angle from normalized magnetometer data
+static int calculate_heading(float x, float y) {
+    int heading = atan2(y, x) * 180 / M_PI;
+    if (heading < 0) {
+        heading += 360;
+    }
+    return heading;
+}
+
+
+float calculate_lux_ltr329(uint16_t ch0, uint16_t ch1) {
+    float ratio = (float)ch1 / (ch0 + ch1);
+    float als_lux = 0;
+
+    if (ratio < 0.45) {
+        als_lux = (1.7743 * ch0 + 1.1059 * ch1) / ALS_GAIN / ALS_INT;
+    } else if (ratio < 0.64) {
+        als_lux = (4.2785 * ch0 - 1.9548 * ch1) / ALS_GAIN / ALS_INT;
+    } else if (ratio < 0.85) {
+        als_lux = (0.5926 * ch0 + 0.1185 * ch1) / ALS_GAIN / ALS_INT;
+    } else {
+        als_lux = 0;
+    }
+    return als_lux;
+}
+
+
+
+void configure_ltr329_sensor(uint8_t channel) {
+    uint8_t config_contr[2] = {LTR329_ALS_CONTR, 0x01}; // Set gain to x1
+    uint8_t config_meas_rate[2] = {LTR329_ALS_MEAS_RATE, 0x01}; // Set integration time to 300ms
+    int ret;
+
+    ret = i2c_reg_write_byte(i2c_dev, PCA9548A_ADDR, 0x04, 1 << channel);
+    if (ret != 0) {
+        printk("Failed to select I2C multiplexer channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    ret = i2c_write(i2c_dev, config_contr, sizeof(config_contr), LTR329_I2C_ADDRESS);
+    if (ret != 0) {
+        printk("Failed to write ALS_CONTR to I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+    printk("Configured ALS_CONTR for channel %d\n", channel);
+
+    ret = i2c_write(i2c_dev, config_meas_rate, sizeof(config_meas_rate), LTR329_I2C_ADDRESS);
+    if (ret != 0) {
+        printk("Failed to write ALS_MEAS_RATE to I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+    printk("Configured ALS_MEAS_RATE for channel %d\n", channel);
+}
+
+
+
+void read_ltr329_sensor_data(uint8_t channel, uint16_t *ch0, uint16_t *ch1) {
+    uint8_t ch1_data_reading[2] = {0};
+    uint8_t ch0_data_reading[2] = {0};
+    int ret;
+
+    ret = i2c_reg_write_byte(i2c_dev, PCA9548A_ADDR, 0x04, 1 << channel);
+    if (ret != 0) {
+        printk("Failed to select I2C multiplexer channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH1_0, &ch1_data_reading[0]);
+    if (ret != 0) {
+        printk("Failed to read CH1_0 from I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH1_1, &ch1_data_reading[1]);
+    if (ret != 0) {
+        printk("Failed to read CH1_1 from I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH0_0, &ch0_data_reading[0]);
+    if (ret != 0) {
+        printk("Failed to read CH0_0 from I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    ret = i2c_reg_read_byte(i2c_dev, LTR329_I2C_ADDRESS, LTR329_ALS_DATA_CH0_1, &ch0_data_reading[1]);
+    if (ret != 0) {
+        printk("Failed to read CH0_1 from I2C device on channel %d. Error code: %d\n", channel, ret);
+        return;
+    }
+
+    *ch1 = (ch1_data_reading[1] << 8) | ch1_data_reading[0];
+    *ch0 = (ch0_data_reading[1] << 8) | ch0_data_reading[0];
+}
+
+
+
+void calculate_angles(float lux0, float lux1, float lux6, float lux7, float lux8, float *azimuth, float *polar) {
+    // Create vectors based on the lux values
+    float v1_x = lux0;
+    float v1_y = lux1;
+    float v1_z = lux8;
+    float v2_x = lux6;
+    float v2_y = lux7;
+    float v2_z = 0; // Assume LTR329 sensors are in a plane
+
+    // Calculate vector differences
+    float diff_x = v1_x - v2_x;
+    float diff_y = v1_y - v2_y;
+    float diff_z = v1_z - v2_z;
+
+    // Calculate azimuth angle in degrees
+    *azimuth = atan2(diff_y, diff_x) * 180 / M_PI;
+
+    // Ensure azimuth is in the range of 0 to 360 degrees
+    if (*azimuth < 0) {
+        *azimuth += 360;
+    }
+
+    // Calculate polar angle in degrees
+    *polar = atan2(diff_z, sqrt(diff_x * diff_x + diff_y * diff_y)) * 180 / M_PI;
+}
+
+float calculate_average_lux(float lux0, float lux1, float lux6, float lux7, float lux8) {
+    return (lux0 + lux1 + lux6 + lux7 + lux8) / 5.0;
+}
+
+void main(void) {
+    uint16_t ch0_0, ch1_0, ch0_1, ch1_1, ch0, ch1;
+    float als_lux0, als_lux1, als_lux6, als_lux7, als_lux8;
+    float azimuth, polar, average_lux;
+
+    i2c_dev = DEVICE_DT_GET(I2C_NODE);
+
+    i2c_dev_2 = DEVICE_DT_GET(I2C_NODE_C);
+    
+    if (!device_is_ready(i2c_dev_2)) {
+        printk("I2C device not found\n");
+        return;
+    }
+
+    printk("I2C device is ready\n");
+
+    if (lis3mdl_init() < 0) {
+        printk("LIS3MDL initialization failed\n");
+        return;
+    }
+
+    // Calibration variables
+    int32_t m_min[3] = {INT32_MAX, INT32_MAX, INT32_MAX};
+    int32_t m_max[3] = {INT32_MIN, INT32_MIN, INT32_MIN};
+    uint8_t data[6];
+    int16_t mag[3];
+    float mx, my, mz;
+
+    // Calibration loop
+    printk("Starting calibration, move the sensor around...\n");
+    for (int i = 0; i < 2000; i++) { // Adjust the number of samples as needed
+        // Read magnetometer data
+        if (lis3mdl_read(LIS3MDL_OUTX_L, data, 6) < 0) {
+            printk("Failed to read magnetometer data\n");
+            return;
+        }
+
+        mag[0] = (int16_t)(data[0] | (data[1] << 8));
+        mag[1] = (int16_t)(data[2] | (data[3] << 8));
+        mag[2] = (int16_t)(data[4] | (data[5] << 8));
+
+        // Update min and max values
+        if (mag[0] < m_min[0]) m_min[0] = mag[0];
+        if (mag[1] < m_min[1]) m_min[1] = mag[1];
+        if (mag[2] < m_min[2]) m_min[2] = mag[2];
+
+        if (mag[0] > m_max[0]) m_max[0] = mag[0];
+        if (mag[1] > m_max[1]) m_max[1] = mag[1];
+        if (mag[2] > m_max[2]) m_max[2] = mag[2];
+
+        k_sleep(K_MSEC(10)); // Adjust the delay as needed
+    }
+
+
+
+
+
+
+    // Configure LTR329 sensors (connected to channels 0, 1, 6, 7)
+    configure_ltr329_sensor(0);
+    configure_ltr329_sensor(1);
+    configure_ltr329_sensor(6);
+    configure_ltr329_sensor(7);
+    configure_ltr329_sensor(2);
+    k_sleep(K_MSEC(100)); // Give time for the sensor to stabilize
+
+
+
+    while (1) {
+        // Read magnetometer data
+        if (lis3mdl_read(LIS3MDL_OUTX_L, data, 6) < 0) {
+            printk("Failed to read magnetometer data\n");
+            return;
+        }
+
+        mag[0] = (int16_t)(data[0] | (data[1] << 8));
+        mag[1] = (int16_t)(data[2] | (data[3] << 8));
+        mag[2] = (int16_t)(data[4] | (data[5] << 8));
+
+        // Convert to float
+        mx = (float)mag[0];
+        my = (float)mag[1];
+        mz = (float)mag[2];
+
+
+        normalize(&mx, &my, &mz, m_min, m_max);
+
+        // Calculate the heading angle
+        int heading = calculate_heading(mx, my);
+
+
+
+        // Read and calculate lux for LTR329 sensors
+        read_ltr329_sensor_data(0, &ch0_0, &ch1_0);
+        als_lux0 = calculate_lux_ltr329(ch0_0, ch1_0);
+
+        read_ltr329_sensor_data(1, &ch0_1, &ch1_1);
+        als_lux1 = calculate_lux_ltr329(ch0_1, ch1_1);
+
+        read_ltr329_sensor_data(6, &ch0_0, &ch1_0);
+        als_lux6 = calculate_lux_ltr329(ch0_0, ch1_0);
+
+        read_ltr329_sensor_data(7, &ch0_1, &ch1_1);
+        als_lux7 = calculate_lux_ltr329(ch0_1, ch1_1);
+
+        read_ltr329_sensor_data(2, &ch0_0, &ch1_0);
+        als_lux8 = calculate_lux_ltr329(ch0_0, ch1_0);
+
+        // Calculate angles based on lux values from all sensors
+        calculate_angles(als_lux0, als_lux1, als_lux6, als_lux7, als_lux8, &azimuth, &polar);
+
+        // Calculate average lux
+        average_lux = calculate_average_lux(als_lux0, als_lux1, als_lux6, als_lux7, als_lux8);
+
+        // Print results
+        printk("Sensor 0: Current Lux: %.2f\n", als_lux0);
+        printk("Sensor 1: Current Lux: %.2f\n", als_lux1);
+        printk("Sensor 6: Current Lux: %.2f\n", als_lux6);
+        printk("Sensor 7: Current Lux: %.2f\n", als_lux7);
+        printk("Sensor 2: Current Lux: %.2f\n", als_lux8);
+
+        printk("Azimuth: %.2f degrees, Polar: %.2f degrees\n", azimuth, polar);
+        printk("Average Lux: %.2f\n", average_lux);
+        printk("Heading: %.2d degrees\n", heading);
+
+        // Sleep for a specified interval before starting the loop again
+        k_msleep(1000);
+    }
+}

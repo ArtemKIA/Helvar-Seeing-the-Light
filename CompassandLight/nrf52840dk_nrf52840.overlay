@@ -1,0 +1,98 @@
+&i2c1 {
+    status = "okay";
+    pinctrl-0 = <&i2c1_default>;
+    pinctrl-1 = <&i2c1_sleep>;
+    pinctrl-names = "default", "sleep";
+
+    mux: pca9548@70 {
+        compatible = "nxp,pca9548";
+        reg = <0x70>;
+        status = "okay";
+        #address-cells = <1>;
+        #size-cells = <0>;
+
+        ch0: mux_i2c@0 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x0>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            ltr329_0: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+
+        ch1: mux_i2c@1 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x1>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            ltr329_1: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+
+        ch6: mux_i2c@6 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x6>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            ltr329_6: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+
+        ch7: mux_i2c@7 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x7>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            ltr329_7: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+
+        ch2: mux_i2c@2 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x2>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            ltr329_2: ltr329@29 {
+                compatible = "ltr,ltr329";
+                reg = <0x29>;
+                status = "okay";
+            };
+        };
+
+        ch4: mux_i2c@4 {
+            compatible = "nxp,pca9548-channel";
+            reg = <0x4>;
+            status = "okay";
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            lis3mdl: lis3mdl@1c {
+                compatible = "st,lis3mdl";
+                reg = <0x1c>;
+                status = "okay";
+            };
+        };
+    };
+};
