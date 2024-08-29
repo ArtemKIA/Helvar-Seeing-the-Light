@@ -2,7 +2,7 @@
 
 Compass and Light Sensor System
 
-This program is a test implementation designed to interface with LTR329 ambient light sensors and an LIS3MDL magnetometer using the Zephyr RTOS. The primary purpose of the program is to monitor and calculate the direction and intensity of light sources in a room, as well as determine the device's heading based on magnetic field measurements. By integrating these sensor readings, the program can identify the most dominant light source and classify it as either natural or artificial.
+This program is a test implementation designed to interface with LTR303 ambient light sensors and an LIS3MDL magnetometer using the Zephyr RTOS. The primary purpose of the program is to monitor and calculate the direction and intensity of light sources in a room, as well as determine the device's heading based on magnetic field measurements. By integrating these sensor readings, the program can identify the most dominant light source and classify it as either natural or artificial.
 
 How the Program Works
 
