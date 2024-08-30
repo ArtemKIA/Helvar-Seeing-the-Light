@@ -1,8 +1,1 @@
-Bluetooth-Based Light Sensor System
-This program is designed to interact with various sensors using Zephyr RTOS, providing real-time data on light intensity, color temperature, and orientation. It uses Bluetooth Low Energy (BLE) to transmit the collected data. The primary sensors include LTR303 ambient light sensors and a TCS34725 RGB sensor, enabling the system to detect and differentiate between natural and artificial light sources.
 
-How the Program Works
-The program begins by initializing the Bluetooth module and configuring the I2C communication for sensor interactions. It sets up the LTR303 light sensors and TCS34725 RGB sensor, which are used to measure light intensity and color. Data from these sensors is collected and processed to calculate the illuminance (lux), color temperature (CCT), and the direction of the dominant light source. The azimuth and polar angles are computed to understand the spatial orientation of the light, aiding in determining whether the light source is natural or artificial.
-
-Data Transmission and Encryption
-Collected data is prepared for transmission over Bluetooth using BLE advertising. The data includes sensor ID, azimuth, polar angle, average lux, and light source type. For enhanced security, the program includes an option to encrypt this data using AES-128 encryption with a Counter with CBC-MAC (CCM) mode. Although the encryption feature is currently set to false, it can be enabled to secure the data transmitted over BLE. The program continuously updates the advertisement data with new readings, providing a real-time view of the environment's lighting conditions.
