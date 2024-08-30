@@ -528,6 +528,13 @@ int main(void)
 
         const char *source = isNaturalLight ? "Natural" : "Artificial";
 
+        if (average_lux >= 10000) // Light sources above 10000 lux are very likely to be natural light 
+        {
+            isNaturalLight = true;
+        }
+
+        const char *source = isNaturalLight ? "Natural" : "Artificial";
+
         // Print results
         // printk("Sensor 0: Current Lux: %.2f\n", als_lux0);
         // printk("Sensor 1: Current Lux: %.2f\n", als_lux1);
