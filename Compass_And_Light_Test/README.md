@@ -6,7 +6,7 @@ This program is a test implementation designed to interface with LTR303 ambient 
 
 How the Program Works
 
-The program begins by initializing the I2C communication and configuring both the LTR329 light sensors and the LIS3MDL magnetometer. Once the sensors are set up, it enters a loop where it continuously reads data from each sensor. Light intensity values are collected from multiple LTR329 sensors positioned to capture different angles, while the magnetometer provides heading information. The collected data is then processed to calculate the azimuth and polar angles, giving the orientation of the light source relative to the device. The program also calculates the average light intensity and prints the device's heading, azimuth, polar angles, and the relative orientation between the magnetic heading and light source.
+The program begins by initializing the I2C communication and configuring both the LTR303 light sensors and the LIS3MDL magnetometer. Once the sensors are set up, it enters a loop where it continuously reads data from each sensor. Light intensity values are collected from multiple LTR303 sensors positioned to capture different angles, while the magnetometer provides heading information. The collected data is then processed to calculate the azimuth and polar angles, giving the orientation of the light source relative to the device. The program also calculates the average light intensity and prints the device's heading, azimuth, polar angles, and the relative orientation between the magnetic heading and light source.
 
 Limitations
 
