@@ -29,6 +29,7 @@
 #define DEVICE_NAME CONFIG_BT_DEVICE_NAME
 #define DEVICE_NAME_LEN (sizeof(DEVICE_NAME) - 1)
 #define ENCRYPTION false
+
 // Multiplexer i2c address
 #define PCA9548A_ADDR 0x70
 
@@ -93,7 +94,7 @@ float cct_calculation(uint16_t red, uint16_t green, uint16_t blue)
         return 0;
     }
 
-    // Map RGB values to their XYZ counterparts.
+    // Map RGB values to their XYZ counterparts. Was not used in the final version of the project, but can be a useful feature.
     // Based on 6500K fluorescent, 3000K fluorescent
     // and 60W incandescent values for a wide range.
     // Note: Y = Illuminance or lux
